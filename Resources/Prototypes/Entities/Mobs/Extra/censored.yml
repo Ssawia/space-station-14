@@ -1,0 +1,292 @@
+- type: entity
+  parent: [ SimpleSpaceMobBase ]
+  id: BaseMobAbnormality
+  suffix: ""
+  name: Censored
+  description: What is this... It's too disgusting to even look at...
+  abstract: true
+  components:
+  - type: Censored
+    message: Get [CENSORED]
+    convertAudio: /Audio/Weapons/Abnormality/censored_convert.ogg
+    attackAudio: /Audio/Weapons/Abnormality/censored_attack.ogg
+    ignoreResistances: false
+    damage: 26
+  - type: GhostRole
+    allowMovement: true
+    allowSpeech: true
+    makeSentient: true
+    name: ghost-role-information-space-dragon-name
+    description: ghost-role-information-space-dragon-description
+    rules: ghost-role-information-space-dragon-rules
+    raffle:
+      settings: default
+  - type: GhostTakeoverAvailable
+  - type: HTN
+    rootTask:
+      task: XenoCompound
+    blackboard:
+      NavInteract: !type:Bool
+        true
+      NavPry: !type:Bool
+        true
+      NavSmash: !type:Bool
+        true
+  - type: NpcFactionMember
+    factions:
+    - Dragon
+    - Censored
+  - type: Speech
+    speechVerb: LargeMob
+  - type: CombatMode
+  - type: MobMover
+  - type: InputMover
+  - type: MovementSpeedModifier
+    baseWalkSpeed: 1
+    baseSprintSpeed: 1
+    weightlessModifier: 6
+  - type: RandomSprite
+    available:
+    - enum.DamageStateVisualLayers.Base:
+        alive: Rainbow
+  - type: Sprite
+    sprite: Mobs/Abnormality/Aleph/censored.rsi
+    noRot: true
+    layers:
+    - map: [ "enum.DamageStateVisualLayers.Base" ]
+      state: alive
+  - type: Appearance
+  - type: DamageStateVisuals
+    states:
+      Alive:
+        Base: alive
+        BaseUnshaded: alive-unshaded
+      Dead:
+        Base: dead
+        BaseUnshaded: dead-unshaded
+  - type: Physics
+    bodyType: KinematicController
+  - type: Fixtures
+    fixtures:
+      fix1:
+        shape:
+          !type:PhysShapeCircle
+          radius: 0.40
+        density: 100
+        mask:
+        - FlyingMobMask
+        layer:
+        - FlyingMobLayer
+  - type: MobState
+  - type: MobStateActions
+    actions:
+      Critical:
+      - ActionCritSuccumb
+      - ActionCritLastWords
+  - type: MobThresholds
+    thresholds:
+      0: Alive
+      1500: Dead
+  - type: StatusEffects # Overwriting basesimplemob to remove flash, getting flashed as dragon just feelsbad
+    allowed:
+    - SlowedDown
+    - Stutter
+    - RadiationProtection
+    - Adrenaline
+  - type: Metabolizer
+    solutionOnBody: false
+    updateInterval: 0.25
+    metabolizerTypes: [ Dragon ]
+    groups:
+    - id: Medicine
+    - id: Poison
+  - type: Butcherable
+    spawned:
+    - id: FoodMeatDragon
+      amount: 2
+  - type: InteractionPopup
+    successChance: 0.25 # It's no goose, but you better smell like carp.
+    interactSuccessString: petting-success-dragon
+    interactFailureString: petting-failure-dragon
+    interactFailureSound:
+      path: /Audio/Animals/space_dragon_roar.ogg
+    soundPerceivedByOthers: false # A 75% chance for a loud roar would get old fast.
+  - type: MeleeWeapon
+    altDisarm: false
+    soundHit:
+      path: /Audio/Weapons/Abnormality/censored_attack.ogg
+    damage:
+      types:
+        Piercing: 26
+  - type: Devourer
+    foodPreference: Humanoid
+    shouldStoreDevoured: true
+    chemical: Ichor
+    healRate: 15.0
+    whitelist:
+      components:
+      - MobState
+      - Door
+      tags:
+      - Wall
+  - type: Tag
+    tags:
+    - CannotSuicide
+    - DoorBumpOpener
+
+
+- type: entity
+  parent: BaseMobAbnormality
+  id: MobCensored
+  components:
+  - type: Dragon
+    spawnRiftAction: ActionSpawnRift
+  - type: ActionGun
+    action: ActionDragonsBreath
+    gunProto: DragonsBreathGun
+  - type: GuideHelp
+    guides:
+    - MinorAntagonists
+
+
+
+
+
+- type: entity
+  name: censored
+  id: MobCensoredChildren
+  parent: [ SimpleMobBase, MobCombat ]
+  description: What is this... It's too disgusting to even look at...
+  categories: [ HideSpawnMenu ] #Must be configured to a King or the AI breaks.
+  components:
+  - type: CombatMode
+  - type: MovementSpeedModifier
+    baseWalkSpeed : 3.5
+    baseSprintSpeed : 3.5
+  - type: InputMover
+  - type: MobMover
+  - type: HTN
+    rootTask:
+      task: RatServantCompound
+    blackboard:
+      IdleRange: !type:Single
+        3.5
+      FollowCloseRange: !type:Single
+        2.0
+      FollowRange: !type:Single
+        3.0
+  - type: Reactive
+    groups:
+      Flammable: [Touch]
+      Extinguish: [Touch]
+  - type: NpcFactionMember
+    factions:
+    - SimpleHostile
+  - type: Sprite
+    drawdepth: SmallMobs
+    sprite: Mobs/Animals/rat.rsi
+    layers:
+    - map: ["enum.DamageStateVisualLayers.Base", "movement"]
+      state: rat
+    - map: [ "enum.DamageStateVisualLayers.BaseUnshaded"]
+      state: eyes
+      shader: unshaded
+  - type: SpriteMovement
+    movementLayers:
+      movement:
+        state: rat-moving
+    noMovementLayers:
+      movement:
+        state: rat
+  - type: Physics
+    bodyType: KinematicController
+  - type: Fixtures
+    fixtures:
+      fix1:
+        shape:
+          !type:PhysShapeCircle
+          radius: 0.2
+        density: 30 #Bulky by mouse standards...
+        mask:
+        - SmallMobMask
+        layer:
+        - SmallMobLayer
+  - type: MobState
+  - type: MobThresholds
+    thresholds:
+      0: Alive
+      300: Dead
+  - type: Stamina
+    critThreshold: 60
+  - type: MeleeWeapon
+    soundHit:
+      path: /Audio/Weapons/bladeslice.ogg
+    angle: 0
+    animation: WeaponArcClaw
+    damage:
+      types:
+        Slash: 5
+        Piercing: 3
+  - type: Body
+    prototype: Rat
+    requiredLegs: 1 # TODO: More than 1 leg
+  - type: Hunger # probably should be prototyped
+    thresholds:
+      Overfed: 200
+      Okay: 150
+      Peckish: 100
+      Starving: 50
+      Dead: 0
+    baseDecayRate: 0.01666666666
+  - type: Thirst
+    thresholds:
+      OverHydrated: 600
+      Okay: 450
+      Thirsty: 300
+      Parched: 150
+      Dead: 0
+    baseDecayRate: 0.1
+  - type: DamageStateVisuals
+    states:
+      Alive:
+        Base: rat
+        BaseUnshaded: eyes
+      Critical:
+        Base: dead
+      Dead:
+        Base: splat
+  - type: Butcherable
+    spawned:
+    - id: FoodMeatRat
+      amount: 1
+  - type: Vocal
+    sounds:
+      Male: Mouse
+      Female: Mouse
+      Unsexed: Mouse
+    wilhelmProbability: 0.001
+  - type: Tag
+    tags:
+    - CannotSuicide
+    - FootstepSound
+  - type: NoSlip
+  - type: MobPrice
+    price: 500 # rat wealth
+  - type: MobsterAccent
+    isBoss: false
+  - type: Speech
+    speechVerb: SmallMob
+  - type: GuideHelp
+    guides:
+    - MinorAntagonists
+  - type: FireVisuals
+    sprite: Mobs/Effects/onfire.rsi
+    normalState: Mouse_burning
+
+
+
+
+
+
+
+
