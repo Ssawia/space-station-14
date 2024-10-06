@@ -12,6 +12,7 @@ using Robust.Shared.Network;
 using Robust.Shared.Prototypes;
 using Robust.Shared.Utility;
 
+
 namespace Content.Shared.Damage
 {
     public sealed class DamageableSystem : EntitySystem
@@ -20,6 +21,7 @@ namespace Content.Shared.Damage
         [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
         [Dependency] private readonly INetManager _netMan = default!;
         [Dependency] private readonly MobThresholdSystem _mobThreshold = default!;
+
 
         private EntityQuery<AppearanceComponent> _appearanceQuery;
         private EntityQuery<DamageableComponent> _damageableQuery;
@@ -111,6 +113,74 @@ namespace Content.Shared.Damage
             RaiseLocalEvent(uid, new DamageChangedEvent(component, damageDelta, interruptsDoAfters, origin));
         }
 
+        public DamageSpecifier? GetDamage(EntityUid? uid, DamageSpecifier damage, bool ignoreResistances = false, bool interruptsDoAfters = true, DamageableComponent? damageable = null, EntityUid? origin = null)
+        {
+
+        if (!uid.HasValue || !_damageableQuery.Resolve(uid.Value, ref damageable, false))
+        {
+            // TODO BODY SYSTEM pass damage onto body system
+            return null;
+        }
+
+        if (damage.Empty)
+        {
+            return damage;
+        }
+
+        var before = new BeforeDamageChangedEvent(damage, origin);
+        RaiseLocalEvent(uid.Value, ref before);
+
+        if (before.Cancelled)
+            return null;
+
+        // Apply resistances
+        if (!ignoreResistances)
+        {
+            if (damageable.DamageModifierSetId != null &&
+                _prototypeManager.TryIndex<DamageModifierSetPrototype>(damageable.DamageModifierSetId, out var modifierSet))
+            {
+                // TODO DAMAGE PERFORMANCE
+                // use a local private field instead of creating a new dictionary here..
+                damage = DamageSpecifier.ApplyModifierSet(damage, modifierSet);
+            }
+
+            var ev = new DamageModifyEvent(damage, origin);
+            RaiseLocalEvent(uid.Value, ev);
+            damage = ev.Damage;
+
+            if (damage.Empty)
+            {
+                    return damage;
+            }
+        }
+
+        // TODO DAMAGE PERFORMANCE
+        // Consider using a local private field instead of creating a new dictionary here.
+        // Would need to check that nothing ever tries to cache the delta.
+        var delta = new DamageSpecifier();
+        delta.DamageDict.EnsureCapacity(damage.DamageDict.Count);
+
+        var dict = damageable.Damage.DamageDict;
+        foreach (var (type, value) in damage.DamageDict)
+        {
+            // CollectionsMarshal my beloved.
+            if (!dict.TryGetValue(type, out var oldValue))
+                continue;
+
+            var newValue = FixedPoint2.Max(FixedPoint2.Zero, oldValue + value);
+            if (newValue == oldValue)
+                continue;
+
+
+
+            delta.DamageDict[type] = newValue - oldValue;
+        }
+
+
+        return delta;
+
+        }
+
         /// <summary>
         ///     Applies damage specified via a <see cref="DamageSpecifier"/>.
         /// </summary>
@@ -180,6 +250,7 @@ namespace Content.Shared.Damage
                 var newValue = FixedPoint2.Max(FixedPoint2.Zero, oldValue + value);
                 if (newValue == oldValue)
                     continue;
+
 
                 dict[type] = newValue;
                 delta.DamageDict[type] = newValue - oldValue;
@@ -366,5 +437,7 @@ namespace Content.Shared.Damage
             }
             InterruptsDoAfters = interruptsDoAfters && DamageIncreased;
         }
+
+
     }
 }

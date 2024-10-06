@@ -1,6 +1,7 @@
-﻿using Robust.Shared.GameStates;
+﻿
 
 namespace Content.Shared.RatKing;
+using Robust.Shared.GameStates;
 
 [RegisterComponent, NetworkedComponent, Access(typeof(SharedRatKingSystem))]
 [AutoGenerateComponentState]
